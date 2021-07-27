@@ -126,15 +126,16 @@ static int cortex_m_store_core_reg_u32(struct target *target,
 static int cortex_m_write_debug_halt_mask(struct target *target,
 	uint32_t mask_on, uint32_t mask_off)
 {
-	struct cortex_m_common *cortex_m = target_to_cm(target);
-	struct armv7m_common *armv7m = &cortex_m->armv7m;
+//	struct cortex_m_common *cortex_m = target_to_cm(target);
+//	struct armv7m_common *armv7m = &cortex_m->armv7m;
 
 	/* mask off status bits */
-	cortex_m->dcb_dhcsr &= ~((0xFFFFul << 16) | mask_off);
+	//cortex_m->dcb_dhcsr &= ~((0xFFFFul << 16) | mask_off);
 	/* create new register mask */
-	cortex_m->dcb_dhcsr |= DBGKEY | C_DEBUGEN | mask_on;
+	//cortex_m->dcb_dhcsr |= DBGKEY | C_DEBUGEN | mask_on;
 
-	return mem_ap_write_atomic_u32(armv7m->debug_ap, DCB_DHCSR, cortex_m->dcb_dhcsr);
+//	return mem_ap_write_atomic_u32(armv7m->debug_ap, DCB_DHCSR, cortex_m->dcb_dhcsr);*/
+	return 0;
 }
 
 static int cortex_m_set_maskints(struct target *target, bool mask)
@@ -239,15 +240,15 @@ static int cortex_m_clear_halt(struct target *target)
 
 static int cortex_m_single_step_core(struct target *target)
 {
-	struct cortex_m_common *cortex_m = target_to_cm(target);
+/*	struct cortex_m_common *cortex_m = target_to_cm(target);
 	struct armv7m_common *armv7m = &cortex_m->armv7m;
 	int retval;
-
+*/
 	/* Mask interrupts before clearing halt, if not done already.  This avoids
 	 * Erratum 377497 (fixed in r1p0) where setting MASKINTS while clearing
 	 * HALT can put the core into an unknown state.
 	 */
-	if (!(cortex_m->dcb_dhcsr & C_MASKINTS)) {
+    /*if (!(cortex_m->dcb_dhcsr & C_MASKINTS)) {
 		retval = mem_ap_write_atomic_u32(armv7m->debug_ap, DCB_DHCSR,
 				DBGKEY | C_MASKINTS | C_HALT | C_DEBUGEN);
 		if (retval != ERROR_OK)
@@ -258,9 +259,9 @@ static int cortex_m_single_step_core(struct target *target)
 	if (retval != ERROR_OK)
 		return retval;
 	LOG_DEBUG(" ");
-
+*/
 	/* restore dhcsr reg */
-	cortex_m_clear_halt(target);
+//	cortex_m_clear_halt(target);
 
 	return ERROR_OK;
 }
@@ -309,11 +310,11 @@ static int cortex_m_endreset_event(struct target *target)
 	retval = mem_ap_read_atomic_u32(armv7m->debug_ap, DCB_DHCSR, &cortex_m->dcb_dhcsr);
 	if (retval != ERROR_OK)
 		return retval;
-	if (!(cortex_m->dcb_dhcsr & C_DEBUGEN)) {
+/*	if (!(cortex_m->dcb_dhcsr & C_DEBUGEN)) {
 		retval = cortex_m_write_debug_halt_mask(target, 0, C_HALT | C_STEP | C_MASKINTS);
 		if (retval != ERROR_OK)
 			return retval;
-	}
+	}*/
 
 	/* Restore proper interrupt masking setting for running CPU. */
 	cortex_m_set_maskints_for_run(target);
@@ -588,7 +589,8 @@ static int cortex_m_poll(struct target *target)
 	/* Recover from lockup.  See ARMv7-M architecture spec,
 	 * section B1.5.15 "Unrecoverable exception cases".
 	 */
-	if (cortex_m->dcb_dhcsr & S_LOCKUP) {
+//	LOG_INFO("DHCSR: %08x\n", cortex_m->dcb_dhcsr);
+	if (false && cortex_m->dcb_dhcsr & S_LOCKUP) {
 		LOG_ERROR("%s -- clearing lockup after double fault",
 			target_name(target));
 		cortex_m_write_debug_halt_mask(target, C_HALT, 0);
@@ -2068,14 +2070,14 @@ int cortex_m_examine(struct target *target)
 		retval = target_read_u32(target, DCB_DHCSR, &cortex_m->dcb_dhcsr);
 		if (retval != ERROR_OK)
 			return retval;
-		if (!(cortex_m->dcb_dhcsr & C_DEBUGEN)) {
+/*		if (!(cortex_m->dcb_dhcsr & C_DEBUGEN)) {
 			uint32_t dhcsr = (cortex_m->dcb_dhcsr | C_DEBUGEN) & ~(C_HALT | C_STEP | C_MASKINTS);
 
 			retval = target_write_u32(target, DCB_DHCSR, DBGKEY | (dhcsr & 0x0000FFFFUL));
 			if (retval != ERROR_OK)
 				return retval;
 			cortex_m->dcb_dhcsr = dhcsr;
-		}
+		}*/
 
 		/* Configure trace modules */
 		retval = target_write_u32(target, DCB_DEMCR, TRCENA | armv7m->demcr);
